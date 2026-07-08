@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EngineerOutput",
+  "type": "object",
+  "required": ["task_id", "changes_summary", "files_changed", "decisions", "self_check"],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "description": "对应 Planner 的 task_id"
+    },
+    "changes_summary": {
+      "type": "string",
+      "description": "变更摘要"
+    },
+    "files_changed": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "action", "content"],
+        "properties": {
+          "path": { "type": "string" },
+          "action": { "type": "string", "enum": ["created", "modified"] },
+          "content": { "type": "string", "description": "文件完整内容" }
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["choice", "reason"],
+        "properties": {
+          "choice": { "type": "string" },
+          "reason": { "type": "string" },
+          "alternatives": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "self_check": {
+      "type": "string",
+      "description": "自测结果"
+    }
+  }
+}

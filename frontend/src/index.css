@@ -1,0 +1,50 @@
+@import "katex/dist/katex.min.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── 修复 Tailwind preflight 对 KaTeX 渲染的破坏 ────── */
+/* Tailwind 的 *,::before,::after{box-sizing:border-box} 会破坏 KaTeX 布局。
+   KaTeX 依赖 content-box 来计算其内部元素的精确尺寸。 */
+.katex,
+.katex *,
+.katex *::before,
+.katex *::after {
+  box-sizing: content-box;
+}
+
+/* ── 全高布局基础 ─────────────────────────────── */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  height: 100%;
+}
+
+/* ── 流式光标闪烁动画 ──────────────────────────── */
+@keyframes cursor-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-cursor-blink {
+    animation: cursor-blink 1s step-end infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-cursor-blink {
+    opacity: 1;
+  }
+}

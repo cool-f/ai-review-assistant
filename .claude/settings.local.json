@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l ~/.claude/history.jsonl 2>/dev/null)",
+      "Read(//c/Users/25431/.claude/**)"
+    ]
+  }
+}

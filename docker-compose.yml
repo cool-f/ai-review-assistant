@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  db:
+    image: pgvector/pgvector:pg15
+    container_name: review_db
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-review_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-review_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-review_db}
+    volumes:
+      - ./data/pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-review_user} -d ${POSTGRES_DB:-review_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "PlannerOutput",
+  "type": "object",
+  "required": ["task_id", "requirement", "technical_spec", "constraints"],
+  "properties": {
+    "task_id": {
+      "type": "string",
+      "description": "任务唯一标识，格式 feat-xxx 或 fix-xxx"
+    },
+    "requirement": {
+      "type": "string",
+      "description": "原始需求描述（一句话）"
+    },
+    "technical_spec": {
+      "type": "object",
+      "required": ["summary", "files_to_create", "files_to_modify", "api_contract", "data_model_changes", "acceptance_criteria"],
+      "properties": {
+        "summary": { "type": "string" },
+        "files_to_create": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "purpose"],
+            "properties": {
+              "path": { "type": "string" },
+              "purpose": { "type": "string" }
+            }
+          }
+        },
+        "files_to_modify": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "change"],
+            "properties": {
+              "path": { "type": "string" },
+              "change": { "type": "string" }
+            }
+          }
+        },
+        "api_contract": {
+          "type": "object",
+          "required": ["method", "path"],
+          "properties": {
+            "method": { "type": "string" },
+            "path": { "type": "string" },
+            "request_body": { "type": "object" },
+            "response": { "type": "object" },
+            "query_params": { "type": "object" }
+          }
+        },
+        "data_model_changes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}
