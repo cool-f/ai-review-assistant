@@ -1,330 +1,161 @@
-# 📚 期末复习助手
+# 期末复习助手
 
-AI 驱动的智能期末复习平台 — 上传课件自动提取知识点，上传作业自动答题并匹配考点，支持基于知识库的 AI 对话辅导、AI 自动出题练习、复习进度追踪。
+一个本地部署、单用户、单端的 AI 复习工作区。它以“课程”为业务边界，把课件摄取、知识点校正、课程问答、作业解答、练习判定和掌握度更新串成可恢复、可核验的学习闭环。
 
-## ✨ 功能特性
+本版本明确不包含用户注册/登录、权限、多租户，也不拆分学生端和教师端。请仅在可信的本地网络环境中使用。
 
-### 📖 课件管理
-- 支持上传 **PDF、PPTX、DOCX、TXT、Markdown** 格式课件
-- 自动提取文本内容，AI 识别知识点与例题
-- 支持**图片型 PDF（扫描件）**多模态 Vision 识别（需 Anthropic/OpenAI/Qwen）
-- 上传前 **Token 用量与费用预估**，用户确认后才触发 AI 提取
-- 生成 1024 维向量嵌入，支持语义相似度搜索
-- 自动发现跨文档知识点关联
-- 目录树按课件/作业分类管理
+## 业务闭环
 
-### 📝 作业答疑
-- 支持上传多种格式作业，**自动识别题号与题目**
-- AI 流式逐题解答（SSE），实时展示解题过程
-- 自动将答案与课件知识点关联匹配（jieba 中文分词 + 向量语义匹配）
-
-### 💬 AI 对话辅导
-- 基于课件知识库的**上下文感知对话**
-- **pgvector 语义检索**：用户问题 → 向量搜索课件相关片段 → 注入对话上下文（替代旧的全量拼接）
-- 三级上下文窗口：系统提示 → 语义搜索知识上下文 → 滑动消息窗口
-- 支持 Markdown 渲染与 LaTeX 数学公式
-- SSE 流式响应，打字机效果
-- 多轮对话自动上下文管理
-
-### 📝 AI 自动出题
-- 在知识点详情面板一键「出题练习」，AI 根据知识点内容生成练习题
-- 支持**选择题、填空题、计算题、证明题**，题型由 AI 自动推断
-- 如果课件中有例题，AI 模仿例题格式生成
-- 题目**答案默认隐藏**，点击「显示答案」展开
-- 右上角「练习」Tab 集中管理所有已生成题目
-- 题目持久化存储，支持按课件筛选、引用到聊天追问
-
-### 📊 复习进度追踪
-- 每个知识点前显示**状态图标**：🟢已掌握 🟡学习中 ⚪未开始 🔴需加强
-- 手动标记「未开始 / 学习中 / 已掌握」
-- 做题自动更新状态（连续做对 3 题 → mastered，做错 → struggling）
-- 课件节点旁显示「N/M 已掌握」
-- 左栏底部**全局进度条**，汇总所有知识点进度
-
-### 📊 用量监控
-- 后台看板追踪 AI Token 消耗，支持日预算告警
-- 多厂商 API Key 配置，**模型名前缀自动检测提供商**
-
-## 🏗️ 技术栈
-
-| 层级 | 技术 |
-|------|------|
-| **后端框架** | Python 3.11+ / FastAPI (异步) |
-| **数据库** | PostgreSQL 15 + pgvector 向量扩展 |
-| **ORM** | SQLAlchemy 2.0 (异步) + Alembic 迁移 |
-| **AI 提供商** | DeepSeek / OpenAI / Anthropic / 通义千问 (DashScope) — **自动检测** |
-| **向量嵌入** | DashScope text-embedding-v4 (1024 维) + IVFFlat 索引 |
-| **中文分词** | jieba |
-| **Token 计数** | tiktoken |
-| **文件解析** | PyMuPDF / python-pptx / python-docx |
-| **前端框架** | React 18 + TypeScript (strict) |
-| **构建工具** | Vite 5 |
-| **样式** | Tailwind CSS 3 |
-| **Markdown** | react-markdown + KaTeX (LaTeX 数学公式) |
-| **HTTP 客户端** | Axios + SSE (fetch ReadableStream) |
-
-## 📁 项目结构
-
-```
-review_assistant/
-├── backend/                       # Python FastAPI 后端
-│   ├── main.py                    # 应用入口, 生命周期, CORS, 路由注册
-│   ├── config.py                  # pydantic-settings 配置管理
-│   ├── database.py                # 异步 SQLAlchemy 引擎与会话
-│   ├── models.py                  # 15 张 ORM 数据模型
-│   ├── api/                       # REST API 路由
-│   │   ├── chat.py                # 对话会话 & SSE 消息流
-│   │   ├── coursewares.py         # 课件 CRUD + 上传 + preflight
-│   │   ├── knowledge_points.py    # 知识点提取 & 列表
-│   │   ├── examples.py            # 例题列表
-│   │   ├── homeworks.py           # 作业 CRUD + AI 答题
-│   │   ├── questions.py           # AI 自动出题 (SSE 流式)
-│   │   ├── progress.py            # 复习进度追踪
-│   │   ├── links.py               # 知识点关联
-│   │   ├── folders.py             # 文件夹管理
-│   │   └── admin.py               # Token 用量看板
-│   ├── services/                  # 业务逻辑
-│   │   ├── ai_client.py           # AI 客户端抽象工厂 + 自动检测
-│   │   ├── ai_extractor.py        # AI 知识点提取
-│   │   ├── text_extractor.py      # 文件文本提取 + Vision 识别
-│   │   ├── chat_service.py        # RAG 语义搜索对话引擎
-│   │   ├── homework_service.py    # 作业识别 + 并发解题
-│   │   ├── question_service.py    # AI 自动出题服务
-│   │   ├── embedding_service.py   # DashScope 向量嵌入
-│   │   ├── linking_service.py     # pgvector 相似度关联
-│   │   ├── kp_matcher.py          # jieba 关键词匹配
-│   │   ├── token_counter.py       # Token 日志 & 预算
-│   │   └── providers/             # AI 提供商适配
-│   │       ├── anthropic.py       # Anthropic (Claude) + Vision
-│   │       ├── openai.py          # OpenAI (GPT)
-│   │       ├── qwen.py            # 通义千问 (DashScope)
-│   │       └── deepseek.py        # DeepSeek
-│   ├── schemas/                   # Pydantic 请求/响应模型
-│   └── alembic/                   # 数据库迁移脚本
-├── frontend/                      # React + TypeScript 前端
-│   ├── vite.config.ts             # Vite 配置 (代理 /api → :8000)
-│   ├── tsconfig.json              # TypeScript strict 配置
-│   ├── tailwind.config.js         # Tailwind CSS 配置
-│   └── src/
-│       ├── main.tsx               # React 入口
-│       ├── App.tsx                 # 根布局 (顶部 Tab 切换)
-│       ├── api/                   # API 客户端
-│       │   ├── client.ts          # Axios 实例 + 拦截器
-│       │   └── chat.ts            # 对话 API
-│       ├── types/                 # TypeScript 类型定义
-│       ├── hooks/
-│       │   └── useSSE.ts          # SSE Hook (自动重连, 指数退避)
-│       ├── lib/
-│       │   └── markdown.ts        # Markdown 渲染插件
-│       └── components/            # React 组件
-│           ├── DirectoryTree.tsx  # 左侧: 文件上传 & 目录树
-│           ├── FolderTree.tsx     # 文件夹树形视图
-│           ├── ChatPanel.tsx      # 对话面板
-│           ├── PracticePanel.tsx  # 练习面板 (按课件分组题目)
-│           ├── MessageBubble.tsx  # 消息气泡
-│           ├── StreamingMessage.tsx # 流式消息 (打字机效果)
-│           ├── DetailPanel.tsx    # 右侧: 知识点/题目/作业详情
-│           ├── ConfirmModal.tsx   # 确认对话框
-│           └── CollapseToggle.tsx # 侧栏折叠按钮
-├── docker-compose.yml             # PostgreSQL 15 + pgvector
-├── .env.example                   # 环境变量模板
-└── data/                          # 数据库持久化存储
+```text
+创建课程
+  → 上传并摄取课件
+  → 校正知识点并重建语义索引
+  → 课程问答 / 作业解答 / 生成练习
+  → 提交练习答案并获得反馈
+  → 自动更新或人工覆盖掌握度
 ```
 
-## 🚀 快速开始
+核心行为：
 
-### 前置要求
+- 课程是课件、作业、会话、练习和进度的聚合边界；当前页面的数据均按所选课程过滤。
+- 课件上传前会预检文件、读取方式和预计用量；解析、知识提取、向量化、关联发现分别记录状态。
+- 向量化失败时课件仍可浏览，但会明确标记“语义能力降级”；中断任务可在服务重启后恢复。
+- 作业先上传为“待解答”，用户再启动流式逐题求解；求解由独立后台任务执行，页面断开后仍会继续，重连可回放进度，失败后只继续未完成题目。
+- 练习必须提交答案。选择/填空题使用确定性判定，计算/证明题使用可替换 AI 判分适配器。
+- 同一题可保留多次作答历史，但只首次计入掌握度；连续答对 3 道不同题自动掌握，最新答错转为需加强。
+- 人工进度状态覆盖自动结果，也可清除覆盖恢复自动判断。
+- 课程问答保存课件、页码和摘要引用；知识点编辑后会重建向量并刷新同课程内的跨课件关联。
+- 所有文本生成和嵌入调用统一执行预算检查并按课程、业务用途、提供商记录用量。
+- 聊天请求使用幂等键；网络重连最多 3 次，同一请求不会重复保存消息或重复调用模型。
 
-- **Python** 3.11+
-- **Node.js** 18+ / pnpm (或 npm)
-- **Docker** & Docker Compose
+## 状态语义
 
-### 1. 克隆项目
+课件摄取不会再用一个模糊的 `completed` 覆盖全部阶段：
 
-```bash
-git clone <repo-url>
-cd review_assistant
+| 阶段 | 字段 | 典型状态 |
+| --- | --- | --- |
+| 文件解析 | `parse_status` | pending / processing / completed / failed |
+| 知识提取 | `knowledge_status` | pending / processing / completed / failed |
+| 向量化 | `embedding_status` | pending / processing / completed / failed |
+| 关联发现 | `linking_status` | pending / processing / completed / failed |
+| 对外汇总 | `status` | processing / completed / partial / failed |
+
+作业状态使用 `ready / processing / completed / partial / failed`；`partial` 表示已有可用答案，但仍有题目待重试。
+
+## 工程结构
+
+```text
+apps/
+  api/
+    alembic/                 # 001—010 数据库迁移
+    src/review_assistant/
+      domain/                # 无 I/O 的课程、进度、预算、幂等规则
+      application/           # 摄取、作业、练习、知识、聊天用例
+      infrastructure/        # PostgreSQL、AI、文档、用量适配器
+      interfaces/http/       # FastAPI 路由与请求/响应模型
+    tests/                   # 领域、应用和 HTTP 契约测试
+  web/
+    src/app/                 # 单端应用装配
+    src/features/            # chat/library/practice/study/usage
+    src/shared/              # API、SSE、Markdown、类型和通用 UI
+packages/contracts/          # 跨端接口与事件契约说明
+docs/
+  architecture/             # 架构决策
+  specs/                    # 本次业务闭环验收规格
+CONTEXT.md                   # 领域术语和不可破坏约束
 ```
 
-### 2. 配置环境变量
+根目录不再保留旧的 `frontend/`、`backend/` 和 Claude 多代理工作流。
 
-在项目根目录下，复制环境变量模板并填入你的 API Key：
+## 环境要求
 
-```bash
-cp .env.example .env
+- Python 3.11+
+- Node.js 20.19+ 或 22.12+
+- Docker（用于 PostgreSQL 15 + pgvector）
+- 至少一个文本生成模型 API Key
+- 使用语义检索时需要 DashScope API Key
+
+## 本地启动
+
+1. 准备配置：
+
+```powershell
+Copy-Item .env.example .env
 ```
 
-编辑 `.env`，必须填写以下两项：
+填写 `.env` 中实际使用的 API Key。不要提交 `.env`。
 
-```env
-# AI 提供商 (自动检测: 根据模型名前缀推断, 也可手动指定)
-AI_PROVIDER=deepseek
-DEEPSEEK_API_KEY=sk-xxxxxxxx
+2. 安装依赖：
 
-# 向量嵌入 (通义千问 DashScope)
-DASHSCOPE_API_KEY=sk-xxxxxxxx
-```
-
-> **注意**：`AI_PROVIDER` 可留空，系统会根据 `AI_DEFAULT_MODEL` 的前缀自动检测（如 `gpt-` → OpenAI, `claude` → Anthropic, `deepseek` → DeepSeek, `qwen` → 通义千问）。图片型 PDF（扫描件）识别需要 Vision 能力，需使用 `anthropic`、`openai` 或 `qwen`。
-
-### 3. 启动数据库
-
-```bash
-docker-compose up -d
-```
-
-这会启动一个 PostgreSQL 15 容器（带 pgvector 扩展），默认端口 `5432`。
-
-### 4. 安装后端依赖
-
-```bash
-cd backend
-
-# 创建虚拟环境
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# 安装依赖
-pip install -r requirements.txt
-```
-
-### 5. 运行数据库迁移
-
-```bash
-# 在 backend/ 目录下执行（alembic.ini 所在目录）
-alembic upgrade head
-```
-
-### 6. 启动后端
-
-```bash
-# 回到项目根目录，因为代码使用 backend.xxx 绝对导入
-cd ..
-uvicorn backend.main:app --reload --port 8000
-```
-
-### 7. 安装前端依赖 & 启动
-
-```bash
-cd frontend
+```powershell
+python -m pip install -e "apps/api[dev]"
 npm install
-npm run dev    # 启动 Vite 开发服务器 (端口 5173)
 ```
 
-### 8. 打开应用
+3. 启动数据库并迁移：
 
-浏览器访问 **http://localhost:5173**
-
-## 🎯 使用指南
-
-### 上传课件
-1. 点击左上角「上传」按钮（确认当前处于「课件」模式）
-2. 选择课件文件（支持 PDF/PPTX/DOCX/TXT/MD）
-3. 系统预估 Token 用量与费用 → 用户确认 → 开始处理
-4. AI 自动提取知识点、例题 → 生成向量嵌入 → 建立跨课件关联
-5. 在左侧目录树可浏览课件及其知识点（带进度状态图标）
-
-### 上传作业
-1. 在左栏顶部切换到「作业」模式
-2. 上传作业文件
-3. AI 自动识别题目并流式解答
-4. 答案自动关联到课件的相关知识点
-
-### AI 对话
-1. 在顶部选择「对话」Tab
-2. 选中一个课件，新建对话会话
-3. 输入问题，AI **语义搜索**课件相关知识后回答
-4. 右侧面板可查看当前课件知识点详情
-5. 支持引用知识点到对话中
-
-### AI 出题练习
-1. 在知识点详情面板点击「AI 出题练习」按钮
-2. AI 自动生成练习题（题型根据知识点自动推断）
-3. 在顶部切换到「练习」Tab 集中管理所有题目
-4. 题目**答案默认隐藏**，点击「显示答案」展开
-5. 可「引用到聊天」追问 AI
-
-### 复习进度追踪
-- 知识点前显示状态图标：🟢已掌握 🟡学习中 ⚪未开始 🔴需加强
-- 右侧面板点击「未开始/学习中/已掌握」手动标记
-- 做 AI 练习题自动更新掌握状态
-- 左栏底部全局进度条汇总进度
-
-## ⚙️ 配置说明
-
-| 环境变量 | 说明 | 默认值 |
-|----------|------|--------|
-| `AI_PROVIDER` | AI 提供商: `anthropic` / `openai` / `qwen` / `deepseek` | `deepseek` |
-| `AI_DEFAULT_MODEL` | 默认模型 ID（可留空自动检测） | `deepseek-chat` |
-| `AI_MAX_TOKENS` | 每次请求最大 Token 数 | `4096` |
-| `AI_TEMPERATURE` | 生成温度 (0–1) | `0.7` |
-| `DASHSCOPE_API_KEY` | 阿里云 DashScope API Key (向量嵌入) | — |
-| `POSTGRES_HOST` | PostgreSQL 主机地址 | `localhost` |
-| `POSTGRES_PORT` | PostgreSQL 端口 | `5432` |
-| `POSTGRES_USER` | 数据库用户名 | `review_user` |
-| `POSTGRES_PASSWORD` | 数据库密码 | `review_pass` |
-| `POSTGRES_DB` | 数据库名称 | `review_db` |
-| `CORS_ORIGINS` | 前端跨域来源 | `http://localhost:5173` |
-| `DEBUG` | 调试模式 | `true` |
-
-## 🧠 架构设计
-
-### AI 提供商抽象与自动检测
-
-通过 `AbstractAIClient` 抽象基类统一不同 AI 提供商的调用接口，支持**模型名前缀自动检测**：
-
-```
-AbstractAIClient
-├── AnthropicClient  (原生 Anthropic SDK, 支持 Vision)
-├── OpenAIClient     (OpenAI 兼容 SDK, 支持 Vision)
-├── DeepSeekClient   (OpenAI 兼容)
-└── QwenClient       (DashScope OpenAI 兼容, 支持 Vision)
+```powershell
+docker compose up -d db
+Set-Location apps/api
+python -m alembic upgrade head
+Set-Location ../..
 ```
 
-自动检测规则：`claude-` → Anthropic, `gpt-` → OpenAI, `deepseek-` → DeepSeek, `qwen-` → 通义千问。
+4. 启动 API：
 
-### 知识点提取流水线
-
-```
-文字型 PDF: 上传 → 文本提取 (PyMuPDF) → AI 知识点提取 → 向量嵌入 → 跨文档关联
-图片型 PDF: 上传 → 多模态 Vision 逐页识别 → 片段去重合并 → 向量嵌入 → 跨文档关联
+```powershell
+python -m uvicorn review_assistant.main:app --app-dir apps/api/src --reload --host 0.0.0.0 --port 8000
 ```
 
-### 语义搜索对话（RAG）
+5. 在另一个终端启动 Web：
 
-```
-用户问题 → query embedding → pgvector <=> 相似度搜索
-  → chunks + knowledge_points top-K
-  → 注入对话上下文 → AI 回答
+```powershell
+npm run dev:web
 ```
 
-### AI 自动出题
+访问 `http://localhost:5173`。API 文档位于 `http://localhost:8000/docs`，健康检查位于 `http://localhost:8000/api/health`。
 
-```
-知识点 → 收集知识点内容 + 例题 + 课件片段
-  → AI 生成题目 (JSON 数组) → 持久化 → 练习面板展示
-```
+## 数据库升级
 
-### 复习进度状态机
+已有旧数据库必须依次执行到迁移 `010`。迁移 `007` 会建立默认课程并回填旧数据；后续迁移增加作答记录、知识修订/引用、用量维度和聊天幂等请求。
 
-```
-手动标记: 直接覆盖 status (权重最高)
-做题提交:
-  - 有手动标记 → 不自动覆盖
-  - 做错 → struggling
-  - 做对 ≥3 次 → mastered
-  - 做对 ≥1 次 → in_progress
-  - 未答题 → not_started
+```powershell
+Set-Location apps/api
+python -m alembic current
+python -m alembic upgrade head
 ```
 
-### SSE 流式架构
+只校验迁移 SQL、不连接数据库：
 
-前端使用 `fetch` + `ReadableStream` 实现 SSE 监听，支持：
-- 超时检测 (120s)
-- 指数退避自动重连 (最多 3 次)
-- AbortController 中断
-- 统一 SSE 事件格式: `data: {json}\n\n`
+```powershell
+python -m alembic upgrade head --sql
+```
 
-## 📄 License
+## 质量检查
 
-MIT
+```powershell
+npm run test:api
+npm run test:web
+npm run typecheck:web
+npm run build:web
+npm audit
+```
+
+也可以一次执行：
+
+```powershell
+npm run check
+```
+
+## 数据与恢复
+
+- PostgreSQL 数据默认位于 `data/pgdata/`，上传文件默认位于 `uploads/`；两者均被 Git 忽略。
+- 删除课程前必须先清空其课件、作业、文件夹和会话，服务端会拒绝误删非空课程。
+- 服务启动时会重新排队未完成的课件摄取，并将被中断的作业求解标记为可继续的 `partial`。
+- 达到 `DAILY_TOKEN_BUDGET` 后，新 AI/嵌入调用返回明确的预算错误；已有资料、答案、历史和进度仍可读取。
+
+## 业务与架构文档
+
+- [业务验收规格](docs/specs/business-closure-refactor.md)
+- [领域上下文与术语](CONTEXT.md)
+- [ADR-001：单仓应用布局与深模块缝隙](docs/architecture/ADR-001-monorepo-and-deep-modules.md)

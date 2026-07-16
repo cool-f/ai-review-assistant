@@ -11,11 +11,11 @@ build/
 
 # Node
 node_modules/
-frontend/dist/
+apps/web/dist/
 
 # Environment
 .env
-backend/.env
+apps/api/.env
 
 # IDE
 .idea/
@@ -30,3 +30,8 @@ Thumbs.db
 # Uploads (user data)
 uploads/
 data/
+
+# Test / tooling caches
+.pytest_cache/
+.coverage
+htmlcov/

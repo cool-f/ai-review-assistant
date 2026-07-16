@@ -1,0 +1,23 @@
+{
+  "name": "finals-review-assistant",
+  "private": true,
+  "version": "0.2.0",
+  "workspaces": [
+    "apps/web"
+  ],
+  "overrides": {
+    "vite": "8.1.5"
+  },
+  "scripts": {
+    "dev:web": "npm --workspace apps/web run dev",
+    "build:web": "npm --workspace apps/web run build",
+    "typecheck:web": "npm --workspace apps/web run typecheck",
+    "test:web": "npm --workspace apps/web run test",
+    "test:api": "python -m pytest -c apps/api/pyproject.toml apps/api/tests",
+    "test": "npm run test:api && npm run test:web",
+    "check": "npm run test && npm run typecheck:web && npm run build:web"
+  },
+  "devDependencies": {
+    "vite": "8.1.5"
+  }
+}

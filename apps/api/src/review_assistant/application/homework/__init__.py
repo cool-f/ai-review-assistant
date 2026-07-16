@@ -1,0 +1,1 @@
+"""Homework solving application module."""
