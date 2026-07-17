@@ -2,6 +2,7 @@
   "name": "finals-review-assistant",
   "private": true,
   "version": "0.2.0",
+  "description": "Local, course-scoped AI review workspace with traceable Q&A, homework solving, practice grading, and study progress.",
   "workspaces": [
     "apps/web"
   ],
