@@ -6,7 +6,7 @@
 
 ## 决策
 
-根目录不再以 `backend/`、`frontend/` 两个大桶组织代码，而采用可部署应用、共享契约和文档分区：
+根目录不再以 `backend/`、`frontend/` 两个大桶组织代码，而采用可部署应用和文档分区：
 
 ```text
 apps/
@@ -22,8 +22,6 @@ apps/
     src/app/                 # 单端应用装配和课程上下文
     src/features/            # library/chat/practice/study/usage
     src/shared/              # API、SSE、类型和通用 UI
-packages/
-  contracts/                 # 跨端接口与 SSE 事件契约说明
 docs/
   specs/
   architecture/
@@ -41,5 +39,6 @@ docs/
 
 - 摄入、聊天、作业和练习规则集中在应用层，路由只承担传输职责。
 - 外部 AI、数据库和文件系统通过适配器隔离，测试可以替换边界实现。
+- 当前跨端类型由 Web 消费真实 HTTP/SSE 接口维护；在产生可复用生成契约前不保留空的共享包。
 - 不保留 `backend/`、`frontend/` 兼容目录或 Claude 多代理工作流。
 - 本项目保持单用户、单端；登录、权限、学生端和教师端不属于本次边界。

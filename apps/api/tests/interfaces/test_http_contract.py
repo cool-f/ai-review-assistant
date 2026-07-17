@@ -10,10 +10,21 @@ from review_assistant.interfaces.http.routes.examples import list_examples
 
 
 def test_business_closure_routes_are_published():
+    paths = app.openapi()["paths"]
     operations = {
-        (route.path, method)
-        for route in app.routes
-        for method in getattr(route, "methods", set())
+        (path, method.upper())
+        for path, path_item in paths.items()
+        for method in (
+            "get",
+            "post",
+            "put",
+            "patch",
+            "delete",
+            "options",
+            "head",
+            "trace",
+        )
+        if method in path_item
     }
 
     required = {
