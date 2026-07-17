@@ -56,10 +56,20 @@ apps/
       ├─ app/                     # 应用装配
       ├─ features/                # 业务功能
       └─ shared/                  # 通用 API、SSE、类型和 UI
-
-docs/                             # 业务规格与架构决策
-CONTEXT.md                        # 领域术语与核心约束
 ```
+
+### 关键文件职责
+
+| 文件 | 职责 |
+| --- | --- |
+| `.env.example` | 可复制的环境变量模板，列出数据库、AI 厂商、模型和预算配置 |
+| `docker-compose.yml` | 定义本地 PostgreSQL 与 pgvector 数据库服务 |
+| `package.json` | 提供前后端启动、迁移、测试、类型检查和构建的统一命令入口 |
+| `apps/api/src/review_assistant/main.py` | 创建 FastAPI 应用并装配 HTTP 路由与启动任务 |
+| `apps/api/src/review_assistant/core/config.py` | 读取并校验运行配置，处理 AI 厂商与模型选择 |
+| `apps/api/alembic/versions/` | 保存数据库结构的版本化迁移脚本 |
+| `apps/web/src/app/App.tsx` | 组织课程工作区、资料库、问答、练习和学习进度界面 |
+| `apps/web/src/shared/api/client.ts` | 封装前端访问后端 API 的通用请求逻辑 |
 
 ## 五分钟启动
 
@@ -159,10 +169,6 @@ DASHSCOPE_API_KEY=your-key
 
 - 本项目不是多人教学平台，也不适合直接暴露到公网。
 
-## 延伸文档
+## 许可证
 
-- [业务验收规格](docs/specs/business-closure-refactor.md)
-
-- [领域上下文与术语](CONTEXT.md)
-
-- [架构决策：单仓应用布局与深模块边界](docs/architecture/ADR-001-monorepo-and-deep-modules.md)
+本项目采用 [MIT License](LICENSE)。
