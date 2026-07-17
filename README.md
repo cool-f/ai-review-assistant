@@ -1,89 +1,119 @@
 # 期末复习助手
 
-一个面向个人复习场景的本地 AI 学习工作区。项目以“课程”为业务边界，把课件摄取、知识点校正、课程问答、作业解答、练习判分和掌握度更新串成可恢复、可核验的学习闭环。
+把课件变成可追溯、可练习、可持续更新的个人复习工作区。
 
-> 当前版本是单用户、单端应用，不包含注册登录、权限、多租户，也不拆分学生端和教师端。请仅部署在可信网络环境中。
+项目以“课程”为业务边界，将课件解析、知识整理、AI 问答、作业解答、练习判分和掌握度更新连接成完整学习闭环。所有数据与服务均可在本地部署。
 
-## 核心能力
+> 当前版本面向单用户、单端场景，不提供注册登录、权限、多租户，也不区分学生端和教师端。请仅在可信网络环境中运行。
 
-- **课程隔离**：课件、作业、会话、练习、进度和用量均按当前课程过滤。
-- **课件摄取**：上传前预检，分别跟踪解析、知识提取、向量化和关联发现状态。
-- **可恢复任务**：课件摄取、作业解答和聊天支持失败重试、服务重启恢复或事件回放。
-- **可信问答**：回答附带课件、页码和内容摘要；同一请求通过幂等键避免重复调用模型。
-- **作业解答**：逐题流式生成，页面断开后后台继续执行，部分失败只重试未完成题目。
-- **练习闭环**：支持提交答案、自动或 AI 判分、作答历史以及掌握度自动更新。
-- **知识校正**：知识点可人工编辑，修改后重建向量并刷新同课程内的跨课件关联。
-- **用量与预算**：统一记录文本生成和嵌入调用，可按课程、用途和提供商查看并限制每日预算。
+## 核心功能
 
-业务主流程：
+- **课程工作区**：课件、作业、对话、练习、进度和用量按课程隔离。
 
-```text
-创建课程
-  → 上传并摄取课件
-  → 校正知识点并重建语义索引
-  → 课程问答 / 作业解答 / 生成练习
-  → 提交答案并获得反馈
-  → 自动更新或人工覆盖掌握度
+- **课件知识化**：预检并解析 PDF、PPTX、DOCX、TXT、Markdown，提取知识点并建立向量索引。
+
+- **可追溯问答**：AI 回答附带来源课件、页码和内容摘要；知识点可编辑并重新索引。
+
+- **流式作业解答**：逐题生成答案，断开页面后后台继续，失败时只重试未完成题目。
+
+- **练习与掌握度**：支持出题、作答、判分、历史记录、自动掌握判断和人工覆盖。
+
+- **可靠性与成本控制**：任务可恢复、请求可幂等重连，并统一记录 AI 用量和每日预算。
+
+## 学习闭环
+
+```mermaid
+flowchart LR
+    A["创建课程"] --> B["摄取课件"]
+    B --> C["校正知识点"]
+    C --> D["问答 / 作业 / 练习"]
+    D --> E["提交答案与反馈"]
+    E --> F["更新掌握度"]
 ```
 
-## 技术栈
+## 技术与结构
 
-| 层级 | 技术 |
+| 模块 | 技术 |
 | --- | --- |
-| Web | React 18、TypeScript、Vite 8、Tailwind CSS、Vitest |
-| API | FastAPI、Pydantic 2、SQLAlchemy 2、Alembic、Pytest |
-| 数据库 | PostgreSQL 15、pgvector |
-| AI | DeepSeek、OpenAI、Anthropic、通义千问；DashScope Embedding |
-| 工程 | npm workspaces、uv、Docker Compose |
-
-## 项目结构
+| Web | React 18、TypeScript、Vite 8、Tailwind CSS |
+| API | FastAPI、Pydantic 2、SQLAlchemy 2、Alembic |
+| 数据 | PostgreSQL 15、pgvector |
+| AI | DeepSeek、OpenAI、Anthropic、通义千问、DashScope Embedding |
+| 测试 | Pytest、Vitest、Testing Library |
 
 ```text
-review_assistant/
-├─ apps/
-│  ├─ api/
-│  │  ├─ alembic/                         # 001—010 数据库迁移
-│  │  ├─ src/review_assistant/
-│  │  │  ├─ domain/                       # 无 I/O 的领域规则
-│  │  │  ├─ application/                  # 业务用例与后台任务
-│  │  │  ├─ infrastructure/               # 数据库、AI、文档与用量适配器
-│  │  │  └─ interfaces/http/              # FastAPI 路由与接口模型
-│  │  └─ tests/                           # 领域、应用、迁移和 HTTP 契约测试
-│  └─ web/
-│     └─ src/
-│        ├─ app/                           # 应用装配与课程上下文
-│        ├─ features/                      # chat/library/practice/study/usage
-│        └─ shared/                        # API、SSE、类型、Markdown 和通用 UI
-├─ docs/
-│  ├─ architecture/                       # 架构决策记录
-│  └─ specs/                              # 业务验收规格
-├─ CONTEXT.md                             # 领域术语与核心约束
-├─ docker-compose.yml                     # PostgreSQL + pgvector
-└─ package.json                           # 根目录开发、测试和构建命令
+apps/
+├─ api/
+│  ├─ alembic/                    # 数据库迁移
+│  ├─ src/review_assistant/
+│  │  ├─ domain/                  # 领域规则
+│  │  ├─ application/             # 业务流程与后台任务
+│  │  ├─ infrastructure/          # 数据库、AI、文档与计量适配器
+│  │  └─ interfaces/http/         # FastAPI 接口
+│  └─ tests/
+└─ web/
+   └─ src/
+      ├─ app/                     # 应用装配
+      ├─ features/                # 业务功能
+      └─ shared/                  # 通用 API、SSE、类型和 UI
+
+docs/                             # 业务规格与架构决策
+CONTEXT.md                        # 领域术语与核心约束
 ```
 
-旧的 `frontend/`、`backend/`、空占位包和代理工具工作流均不保留。
+## 五分钟启动
 
-## 环境要求
+需要 Python 3.11+、[uv](https://docs.astral.sh/uv/)、Node.js 20.19+ 或 22.12+，以及 Docker Desktop。
 
-- Python 3.11+
-- [uv](https://docs.astral.sh/uv/)
-- Node.js 20.19+ 或 22.12+
-- Docker Desktop 或兼容的 Docker Engine
-- 至少一个文本生成模型 API Key
-- 使用向量化和语义检索时需要 DashScope API Key
+以下命令均在仓库根目录执行。
 
-## 快速启动
-
-以下命令以 PowerShell 和项目根目录为例。
-
-### 1. 配置环境变量
+### 1. 创建配置
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-建议显式配置文本生成厂商。以 DeepSeek 为例：
+打开 `.env`，至少填写一个文本生成模型的 API Key。使用知识向量化和语义检索时，还需填写 `DASHSCOPE_API_KEY`。
+
+### 2. 安装依赖
+
+```powershell
+uv sync --project apps/api --extra dev
+npm install
+```
+
+### 3. 启动数据库
+
+```powershell
+docker compose up -d db
+npm run db:upgrade
+```
+
+可用 `npm run db:status` 检查迁移状态，正常结果为 `010 (head)`。
+
+### 4. 启动应用
+
+终端一：
+
+```powershell
+npm run dev:api
+```
+
+终端二：
+
+```powershell
+npm run dev:web
+```
+
+| 服务 | 地址 |
+| --- | --- |
+| Web | <http://localhost:5173> |
+| API 文档 | <http://localhost:8000/docs> |
+| 健康检查 | <http://localhost:8000/api/health> |
+
+## AI 配置
+
+建议显式填写厂商和模型，避免不同运行环境自动选择不同服务。
 
 ```env
 AI_PROVIDER=deepseek
@@ -95,124 +125,44 @@ EMBEDDING_MODEL=text-embedding-v4
 DASHSCOPE_API_KEY=your-key
 ```
 
-如果 `AI_PROVIDER` 和 `AI_DEFAULT_MODEL` 留空，后端会根据已配置的 API Key 自动选择厂商。`.env` 包含密钥，已被 Git 忽略，不要提交。
+| 文本生成厂商 | `AI_PROVIDER` | 密钥变量 |
+| --- | --- | --- |
+| DeepSeek | `deepseek` | `DEEPSEEK_API_KEY` |
+| OpenAI | `openai` | `OPENAI_API_KEY` |
+| Anthropic | `anthropic` | `ANTHROPIC_API_KEY` |
+| 通义千问 | `qwen` | `DASHSCOPE_API_KEY` |
 
-### 2. 安装依赖
+当 `AI_PROVIDER` 和 `AI_DEFAULT_MODEL` 留空时，后端会根据已配置的密钥自动选择厂商。修改 `.env` 后需要重启 API。
 
-```powershell
-uv sync --project apps/api --extra dev
-npm install
-```
+## 开发与验证
 
-### 3. 启动数据库并迁移
+| 命令 | 用途 |
+| --- | --- |
+| `npm run dev:api` | 启动 FastAPI 开发服务 |
+| `npm run dev:web` | 启动 Web 开发服务 |
+| `npm run db:upgrade` | 升级数据库到最新版本 |
+| `npm run db:status` | 查看数据库迁移版本 |
+| `npm run test:api` | 运行 API 测试 |
+| `npm run test:web` | 运行 Web 测试 |
+| `npm run check` | 运行全部测试、类型检查和生产构建 |
+| `npm audit` | 检查前端依赖安全问题 |
 
-```powershell
-docker compose up -d db
-npm run db:upgrade
-npm run db:status
-```
+## 数据与边界
 
-迁移状态应显示：
+- PostgreSQL 数据保存在 `data/pgdata/`，上传文件保存在 `uploads/`。
 
-```text
-010 (head)
-```
+- `.env`、运行数据、依赖、虚拟环境、缓存和构建产物均不会提交 Git。
 
-### 4. 启动 API
+- 不要随意执行 `docker compose down -v` 或删除 `data/pgdata/`，否则可能丢失本地数据。
 
-新开一个终端：
+- 文本问答与向量化是两个独立服务；问答可用不代表语义检索已经正确配置。
 
-```powershell
-npm run dev:api
-```
+- 本项目不是多人教学平台，也不适合直接暴露到公网。
 
-### 5. 启动 Web
-
-再开一个终端：
-
-```powershell
-npm run dev:web
-```
-
-启动后可访问：
-
-- Web：<http://localhost:5173>
-- API 文档：<http://localhost:8000/docs>
-- 健康检查：<http://localhost:8000/api/health>
-
-## 推荐验收路径
-
-1. 创建课程。
-2. 上传课件并确认预检信息。
-3. 等待解析、知识提取、向量化和关联发现进入终态。
-4. 查看并编辑知识点，确认索引能够重建。
-5. 发起课程问答，检查来源课件和页码。
-6. 上传作业并启动解答，刷新页面验证后台任务和事件回放。
-7. 生成练习、提交答案，检查判分、历史和掌握度变化。
-8. 查看用量面板及每日预算。
-
-## 常用命令
-
-```powershell
-# 数据库
-npm run db:upgrade
-npm run db:status
-
-# 开发
-npm run dev:api
-npm run dev:web
-
-# 质量检查
-npm run test:api
-npm run test:web
-npm run typecheck:web
-npm run build:web
-npm run check
-npm audit
-```
-
-## 状态与恢复语义
-
-课件摄取分别记录 `parse_status`、`knowledge_status`、`embedding_status` 和 `linking_status`，对外汇总状态为 `processing / completed / partial / failed`。向量化失败不会伪装成完全成功，已解析内容仍可浏览。
-
-作业状态为 `ready / processing / completed / partial / failed`。`partial` 表示已有可用答案，但仍有题目可以继续重试。
-
-服务启动时会恢复未完成的课件任务，并把中断的作业解答调整为可继续状态。聊天和作业的流式连接断开不会重复创建任务。
-
-## 本地数据
-
-- PostgreSQL 数据默认保存在 `data/pgdata/`。
-- 上传文件默认保存在 `uploads/`。
-- `.env`、数据库、上传文件、虚拟环境、依赖、测试缓存和构建产物均已被 Git 忽略。
-- `docker compose down` 只停止并移除容器；不要随意添加 `-v` 或手动删除 `data/pgdata/`，否则可能丢失本地数据。
-
-## 常见问题
-
-### `/api/courses` 返回 500
-
-先检查数据库迁移：
-
-```powershell
-npm run db:status
-npm run db:upgrade
-```
-
-确认最终版本是 `010 (head)`，然后刷新页面。
-
-### AI 问答可用，但语义检索或向量化失败
-
-文本问答和向量化使用不同服务。除文本生成厂商的 Key 外，还需要配置：
-
-```env
-DASHSCOPE_API_KEY=your-key
-```
-
-### 修改 `.env` 后没有生效
-
-配置会在 API 进程启动时加载。保存 `.env` 后请重启 API；如果使用 Windows 用户或系统环境变量，也需要重新打开终端后再启动。
-
-## 文档
+## 延伸文档
 
 - [业务验收规格](docs/specs/business-closure-refactor.md)
+
 - [领域上下文与术语](CONTEXT.md)
-- [ADR-001：单仓应用布局与深模块边界](docs/architecture/ADR-001-monorepo-and-deep-modules.md)
+
+- [架构决策：单仓应用布局与深模块边界](docs/architecture/ADR-001-monorepo-and-deep-modules.md)
